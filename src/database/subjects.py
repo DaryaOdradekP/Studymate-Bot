@@ -16,6 +16,8 @@ def add_subject(name: str):
         session.close()
         return False
 
+    subject = Subject(name=name)
+
     session.add(subject)
     session.commit()
     session.close()
