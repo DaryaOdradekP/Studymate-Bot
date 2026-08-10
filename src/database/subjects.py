@@ -57,3 +57,17 @@ def delete_subject(name: str):
     session.close()
 
     return True
+
+
+def subject_exists(name: str):
+    session = SessionLocal()
+
+    statement = select(Subject).where(Subject.name == name)
+
+    result = session.execute(statement)
+
+    subject = result.scalar_one_or_none()
+
+    session.close()
+
+    return subject is not None
