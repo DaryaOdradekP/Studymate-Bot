@@ -4,6 +4,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.database.db import Base
 from sqlalchemy import ForeignKey
 
+from datetime import date
+from sqlalchemy import Date
+
 class Subject(Base):
     __tablename__ = "subjects"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -20,4 +23,5 @@ class Task(Base):
         nullable=False
     )
     subject: Mapped["Subject"] = relationship(back_populates="tasks")
+    deadline: Mapped[date | None] = mapped_column(Date, nullable=True)
     

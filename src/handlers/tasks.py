@@ -12,6 +12,7 @@ from src.database.tasks import (
 from src.keyboards.main_menu import main_menu
 from src.keyboards.tasks_menu import tasks_menu
 from src.states.tasks import TaskState
+from datetime import datetime
 
 router = Router()
 
@@ -55,6 +56,9 @@ async def show_tasks_handler(message: Message):
 
         if task.description:
             text += f"  {task.description}\n"
+
+        if task.deadline:
+            text += f"  Deadline: {task.deadline.strftime('%Y-%m-%d')}\n"
 
         text += "\n"
 
@@ -137,29 +141,18 @@ async def process_task_title(message: Message, state: FSMContext):
 
 @router.message(TaskState.waiting_for_description)
 async def process_task_description(message: Message, state: FSMContext):
-    description = message.text.strip()
+    description = message.text
 
     if description == "-":
         description = None
 
-    data = await state.get_data()
+    await state.update_data(description=description)
 
-    success = add_task(
-        data["subject_name"],
-        data["title"],
-        description,
+    await state.set_state(TaskState.waiting_for_deadline)
+
+    await message.answer(
+        text="Enter deadline (YYYY-MM-DD)\n(or send '-' to skip):"
     )
-
-    await state.clear()
-
-    if success:
-        await message.answer(
-            text="Task has been added."
-        )
-    else:
-        await message.answer(
-            text="Task with this title already exists in this subject."
-        )
 
 
 @router.message(F.text == "Delete Task")
@@ -206,3 +199,39 @@ async def process_delete_task(message: Message, state: FSMContext):
         await message.answer(
             text=f"Task '{task_title}' not found."
         )
+
+
+@router.message(TaskState.waiting_for_deadline)
+async def process_task_deadline(message: Message, state: FSMContext):
+    deadline = message.text
+
+    if deadline == "-":
+        deadline = None
+    else:
+        try:
+            deadline = datetime.strptime(deadline, "%Y-%m-%d").date()
+        except ValueError:
+            await message.answer(
+                text="Invalid date format. Use YYYY-MM-DD or '-' to skip."
+            )
+            return
+
+    data = await state.get_data()
+
+    success = add_task(
+        data["subject_name"],
+        data["title"],
+        data["description"],
+        deadline,
+    )
+
+    if success:
+        await message.answer(
+            text="Task has been added."
+        )
+    else:
+        await message.answer(
+            text="Task could not be added."
+        )
+
+    await state.clear()

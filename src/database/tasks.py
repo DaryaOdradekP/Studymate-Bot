@@ -5,8 +5,14 @@ from src.database.models import Task, Subject
 
 from sqlalchemy.orm import selectinload
 
+from datetime import date
 
-def add_task(subject_name: str, title: str, description: str | None):
+def add_task(
+    subject_name: str,
+    title: str,
+    description: str | None,
+    deadline: date | None,
+):
     session = SessionLocal()
 
     statement = select(Subject).where(Subject.name == subject_name)
@@ -35,6 +41,7 @@ def add_task(subject_name: str, title: str, description: str | None):
     task = Task(
         title=title,
         description=description,
+        deadline=deadline,
         subject_id=subject.id,
     )
 
