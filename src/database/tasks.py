@@ -77,3 +77,28 @@ def delete_task(title: str):
     session.close()
 
     return True
+
+def task_exists(subject_name: str, title: str):
+    session = SessionLocal()
+
+    statement = select(Subject).where(Subject.name == subject_name)
+    result = session.execute(statement)
+
+    subject = result.scalar_one_or_none()
+
+    if subject is None:
+        session.close()
+        return False
+
+    statement = select(Task).where(
+        Task.subject_id == subject.id,
+        Task.title == title
+    )
+
+    result = session.execute(statement)
+
+    existing_task = result.scalar_one_or_none()
+
+    session.close()
+
+    return existing_task is not None

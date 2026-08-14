@@ -3,7 +3,12 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from src.database.subjects import get_subjects, subject_exists
-from src.database.tasks import add_task, delete_task, get_tasks
+from src.database.tasks import (
+    add_task,
+    get_tasks,
+    delete_task,
+    task_exists,
+)
 from src.keyboards.main_menu import main_menu
 from src.keyboards.tasks_menu import tasks_menu
 from src.states.tasks import TaskState
@@ -110,6 +115,14 @@ async def process_task_title(message: Message, state: FSMContext):
     if len(title) > 100:
         await message.answer(
             text="Task title is too long."
+        )
+        return
+
+    data = await state.get_data()
+
+    if task_exists(data["subject_name"], title):
+        await message.answer(
+            text="Task with this title already exists in this subject."
         )
         return
 
