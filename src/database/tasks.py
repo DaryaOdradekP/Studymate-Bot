@@ -109,3 +109,24 @@ def task_exists(subject_name: str, title: str):
     session.close()
 
     return existing_task is not None
+
+
+def complete_task(title: str):
+    session = SessionLocal()
+
+    statement = select(Task).where(Task.title == title)
+
+    result = session.execute(statement)
+
+    task = result.scalar_one_or_none()
+
+    if task is None:
+        session.close()
+        return False
+
+    task.completed = True
+
+    session.commit()
+    session.close()
+
+    return True

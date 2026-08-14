@@ -5,11 +5,13 @@ add_button = KeyboardButton(text="Add Task")
 show_button = KeyboardButton(text="Show Tasks")
 delete_button = KeyboardButton(text="Delete Task")
 back_button = KeyboardButton(text="Back")
+complete_button = KeyboardButton(text="Complete Task")
 
 tasks_menu = ReplyKeyboardMarkup(
     keyboard=[
         [add_button, show_button],
-        [delete_button, back_button],
+        [delete_button, complete_button],
+        [back_button],
     ],
     resize_keyboard=True,
 )

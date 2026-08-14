@@ -24,4 +24,5 @@ class Task(Base):
     )
     subject: Mapped["Subject"] = relationship(back_populates="tasks")
     deadline: Mapped[date | None] = mapped_column(Date, nullable=True)
+    completed: Mapped[bool] = mapped_column(default=False)
     
