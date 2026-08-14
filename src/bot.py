@@ -7,7 +7,6 @@ from src.handlers.tasks import router as tasks_router
 from src.handlers.settings import router as settings_router
 from src.handlers.statistics import router as statistics_router
 
-
 bot = Bot(token=BOT_TOKEN)
 
 dp = Dispatcher()
