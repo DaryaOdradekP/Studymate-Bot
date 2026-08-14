@@ -55,7 +55,12 @@ def add_task(
 def get_tasks():
     session = SessionLocal()
 
-    statement = select(Task).options(selectinload(Task.subject))
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .options(selectinload(Task.subject))
+        .order_by(Subject.name, Task.title)
+    )
 
     result = session.execute(statement)
 
@@ -124,9 +129,86 @@ def complete_task(title: str):
         session.close()
         return False
 
+    if task.completed:
+        session.close()
+        return False
+
     task.completed = True
+    session.commit()
+    session.close()
+
+    return True
+
+
+def update_task_title(old_title: str, new_title: str):
+    session = SessionLocal()
+
+    statement = select(Task).where(Task.title == old_title)
+    result = session.execute(statement)
+
+    task = result.scalar_one_or_none()
+
+    if task is None:
+        session.close()
+        return False
+
+    statement = select(Task).where(
+        Task.title == new_title,
+        Task.subject_id == task.subject_id,
+    )
+
+    result = session.execute(statement)
+
+    existing_task = result.scalar_one_or_none()
+
+    if existing_task is not None:
+        session.close()
+        return False
+
+    task.title = new_title
 
     session.commit()
     session.close()
 
     return True
+
+
+def update_task_description(title: str, description: str | None):
+    session = SessionLocal()
+
+    statement = select(Task).where(Task.title == title)
+    result = session.execute(statement)
+
+    task = result.scalar_one_or_none()
+
+    if task is None:
+        session.close()
+        return False
+
+    task.description = description
+
+    session.commit()
+    session.close()
+
+    return True
+
+
+def update_task_deadline(title: str, deadline: date | None):
+    session = SessionLocal()
+
+    statement = select(Task).where(Task.title == title)
+    result = session.execute(statement)
+
+    task = result.scalar_one_or_none()
+
+    if task is None:
+        session.close()
+        return False
+
+    task.deadline = deadline
+
+    session.commit()
+    session.close()
+
+    return True
+
