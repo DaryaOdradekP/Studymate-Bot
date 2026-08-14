@@ -2,6 +2,14 @@ from aiogram import Router, F
 from aiogram.types import Message
 
 from src.database.statistics import get_statistics
+from src.database.subjects import get_subjects
+from src.database.tasks import (
+    get_tasks_count,
+    get_completed_tasks_count,
+    get_tasks_with_deadline_count,
+    get_tasks_without_deadline_count,
+    get_overdue_tasks_count,
+)
 
 
 router = Router()
@@ -9,16 +17,32 @@ router = Router()
 
 @router.message(F.text == "Statistics")
 async def statistics_handler(message: Message):
-    statistics = get_statistics()
+    subjects_count = len(get_subjects())
 
-    text = "Statistics\n\n"
+    tasks_count = get_tasks_count()
+    completed_count = get_completed_tasks_count()
 
-    text += f"Subjects: {statistics['total_subjects']}\n"
-    text += f"Tasks: {statistics['total_tasks']}\n\n"
+    remaining_count = tasks_count - completed_count
 
-    text += "Tasks by subject\n\n"
+    with_deadline = get_tasks_with_deadline_count()
+    without_deadline = get_tasks_without_deadline_count()
+    overdue_count = get_overdue_tasks_count()
 
-    for subject, count in statistics["tasks_by_subject"].items():
-        text += f"{subject}: {count}\n"
+    completion_rate = 0
+
+    if tasks_count > 0:
+        completion_rate = round(completed_count / tasks_count * 100)
+
+    text = (
+        "Statistics\n\n"
+        f"Subjects: {subjects_count}\n\n"
+        f"Tasks: {tasks_count}\n"
+        f"Completed: {completed_count}\n"
+        f"Remaining: {remaining_count}\n\n"
+        f"Tasks with deadlines: {with_deadline}\n"
+        f"Tasks without deadlines: {without_deadline}\n"
+        f"Overdue tasks: {overdue_count}\n\n"
+        f"Completion rate: {completion_rate}%"
+    )
 
     await message.answer(text)

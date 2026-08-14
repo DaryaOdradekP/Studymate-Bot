@@ -212,3 +212,76 @@ def update_task_deadline(title: str, deadline: date | None):
 
     return True
 
+
+def get_tasks_count():
+    session = SessionLocal()
+
+    statement = select(Task)
+
+    result = session.execute(statement)
+
+    count = len(result.scalars().all())
+
+    session.close()
+
+    return count
+
+
+def get_completed_tasks_count():
+    session = SessionLocal()
+
+    statement = select(Task).where(Task.completed == True)
+
+    result = session.execute(statement)
+
+    count = len(result.scalars().all())
+
+    session.close()
+
+    return count
+
+
+def get_tasks_with_deadline_count():
+    session = SessionLocal()
+
+    statement = select(Task).where(Task.deadline != None)
+
+    result = session.execute(statement)
+
+    count = len(result.scalars().all())
+
+    session.close()
+
+    return count
+
+
+def get_tasks_without_deadline_count():
+    session = SessionLocal()
+
+    statement = select(Task).where(Task.deadline == None)
+
+    result = session.execute(statement)
+
+    count = len(result.scalars().all())
+
+    session.close()
+
+    return count
+
+
+def get_overdue_tasks_count():
+    session = SessionLocal()
+
+    statement = select(Task).where(
+        Task.deadline != None,
+        Task.deadline < date.today(),
+        Task.completed == False,
+    )
+
+    result = session.execute(statement)
+
+    count = len(result.scalars().all())
+
+    session.close()
+
+    return count
