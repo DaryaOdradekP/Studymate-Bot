@@ -63,10 +63,10 @@ async def show_tasks_handler(message: Message):
         text += f"{status} {task.title}\n"
 
         if task.description:
-            text += f"  {task.description}\n"
+            text += f"   Description: {task.description}\n"
 
         if task.deadline:
-            text += f"  Deadline: {task.deadline.strftime('%Y-%m-%d')}\n"
+            text += f"   Deadline: {task.deadline.strftime('%Y-%m-%d')}\n"
 
         text += "\n"
 
@@ -253,8 +253,9 @@ async def process_complete_task(message: Message, state: FSMContext):
 @router.message(TaskState.waiting_for_delete_title)
 async def process_delete_task(message: Message, state: FSMContext):
     task_title = message.text.strip()
+    user_id = message.from_user.id
 
-    success = delete_task(task_title)
+    success = delete_task(task_title, user_id)
 
     await state.clear()
 
@@ -290,12 +291,14 @@ async def process_task_deadline(message: Message, state: FSMContext):
             return
 
     data = await state.get_data()
+    user_id = message.from_user.id
 
     success = add_task(
         data["subject_name"],
         data["title"],
         data["description"],
         deadline,
+        user_id,
     )
 
     if success:
@@ -491,7 +494,7 @@ async def process_new_deadline(message: Message, state: FSMContext):
 @router.message(F.text == "Overdue Tasks")
 async def overdue_tasks_handler(message: Message):
     user_id = message.from_user.id
-    tasks = get_tasks(user_id)
+    tasks = get_overdue_tasks(user_id)
 
     if not tasks:
         await message.answer(

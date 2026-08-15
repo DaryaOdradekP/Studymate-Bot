@@ -65,10 +65,13 @@ def subject_exists(name: str, user_id: int):
     return subject is not None
 
 
-def delete_subject(name: str):
+def delete_subject(name: str, user_id: int):
     session = SessionLocal()
 
-    statement = select(Subject).where(Subject.name == name)
+    statement = select(Subject).where(
+        Subject.name == name,
+        Subject.user_id == user_id,
+    )
 
     result = session.execute(statement)
 

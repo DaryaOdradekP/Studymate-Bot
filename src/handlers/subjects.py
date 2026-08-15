@@ -77,7 +77,9 @@ async def delete_subject_handler(message: Message, state: FSMContext):
 async def process_delete_subject(message: Message, state: FSMContext):
     subject_name = message.text
 
-    success = delete_subject(subject_name)
+    user_id = message.from_user.id
+
+    success = delete_subject(subject_name, user_id)
 
     await state.clear()
 

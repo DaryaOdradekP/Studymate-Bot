@@ -12,10 +12,14 @@ def add_task(
     title: str,
     description: str | None,
     deadline: date | None,
+    user_id: int,
 ):
     session = SessionLocal()
 
-    statement = select(Subject).where(Subject.name == subject_name)
+    statement = select(Subject).where(
+        Subject.name == subject_name,
+        Subject.user_id == user_id,
+    )
 
     result = session.execute(statement)
 
@@ -24,10 +28,10 @@ def add_task(
     if subject is None:
         session.close()
         return False
-    
+
     statement = select(Task).where(
         Task.title == title,
-        Task.subject_id == subject.id
+        Task.subject_id == subject.id,
     )
 
     result = session.execute(statement)
@@ -71,13 +75,19 @@ def get_tasks(user_id: int):
     return tasks
 
 
-def delete_task(title: str):
+def delete_task(title: str, user_id: int):
     session = SessionLocal()
 
-    statement = select(Task).where(Task.title == title)
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Task.title == title,
+            Subject.user_id == user_id,
+        )
+    )
 
     result = session.execute(statement)
-
     task = result.scalar_one_or_none()
 
     if task is None:
@@ -89,6 +99,7 @@ def delete_task(title: str):
     session.close()
 
     return True
+
 
 def task_exists(subject_name: str, title: str):
     session = SessionLocal()
@@ -317,14 +328,20 @@ def get_overdue_tasks_count(user_id: int):
     return count
 
 
-def get_overdue_tasks():
+def get_overdue_tasks(user_id: int):
     session = SessionLocal()
 
-    statement = select(Task).where(
-        Task.deadline != None,
-        Task.deadline < date.today(),
-        Task.completed == False,
-    ).options(selectinload(Task.subject))
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Subject.user_id == user_id,
+            Task.deadline != None,
+            Task.deadline < date.today(),
+            Task.completed == False,
+        )
+        .options(selectinload(Task.subject))
+    )
 
     result = session.execute(statement)
 
