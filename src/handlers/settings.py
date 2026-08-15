@@ -1,6 +1,7 @@
 from aiogram import Router, F
 from aiogram.types import Message
 
+from src.database.settings import get_settings, set_notifications
 from src.keyboards.main_menu import main_menu
 from src.keyboards.settings_menu import settings_menu
 
@@ -36,12 +37,28 @@ async def future_features_handler(message: Message):
     await message.answer(
         text=(
             "Planned features:\n\n"
-            "• Deadlines\n"
-            "• Task completion\n"
-            "• Notifications\n"
-            "• Edit tasks\n"
-            "• Task priority"
+            "• Task reminders\n"
+            "• Task priority\n"
+            "• Task filtering\n"
+            "• Task sorting\n"
+            "• Calendar integration"
         )
+    )
+    
+
+@router.message(F.text == "Notifications")
+async def notifications_handler(message: Message):
+    user_id = message.from_user.id
+    settings = get_settings(user_id)
+
+    new_status = not settings.notifications_enabled
+
+    set_notifications(user_id, new_status)
+
+    status = "enabled" if new_status else "disabled"
+
+    await message.answer(
+        text=f"Notifications {status}."
     )
 
 
@@ -51,4 +68,3 @@ async def back_handler(message: Message):
         text="Main menu",
         reply_markup=main_menu,
     )
-    
