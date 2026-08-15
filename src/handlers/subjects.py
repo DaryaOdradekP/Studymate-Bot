@@ -28,7 +28,8 @@ async def back_handler(message: Message):
 
 @router.message(F.text == "Show Subject")
 async def show_subject_handler(message: Message):
-    subjects = get_subjects()
+    user_id = message.from_user.id
+    subjects = get_subjects(user_id)
 
     if not subjects:
         await message.answer(
@@ -53,7 +54,8 @@ async def add_subject_handler(message: Message, state: FSMContext):
 
 @router.message(F.text == "Delete Subject")
 async def delete_subject_handler(message: Message, state: FSMContext):
-    subjects = get_subjects()
+    user_id = message.from_user.id
+    subjects = get_subjects(user_id)
 
     if not subjects:
         await message.answer(
@@ -91,9 +93,13 @@ async def process_delete_subject(message: Message, state: FSMContext):
 
 @router.message(SubjectState.waiting_for_name)
 async def process_subject_name(message: Message, state: FSMContext):
-    subject_name = message.text
+    subject_name = message.text.strip()
+    user_id = message.from_user.id
 
-    success = add_subject(subject_name)
+    success = add_subject(
+        subject_name,
+        user_id,
+    )
 
     await state.clear()
 
@@ -101,7 +107,7 @@ async def process_subject_name(message: Message, state: FSMContext):
         await message.answer(
             text=f"Subject '{subject_name}' added!"
         )
-    else: 
+    else:
         await message.answer(
             text=f"Subject '{subject_name}' already exists."
         )

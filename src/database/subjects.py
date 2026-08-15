@@ -3,10 +3,14 @@ from sqlalchemy import select
 from src.database.db import SessionLocal
 from src.database.models import Subject
 
-def add_subject(name: str):
+
+def add_subject(name: str, user_id: int):
     session = SessionLocal()
 
-    statement = select(Subject).where(Subject.name == name)
+    statement = select(Subject).where(
+        Subject.name == name,
+        Subject.user_id == user_id,
+    )
 
     result = session.execute(statement)
 
@@ -16,7 +20,10 @@ def add_subject(name: str):
         session.close()
         return False
 
-    subject = Subject(name=name)
+    subject = Subject(
+        name=name,
+        user_id=user_id,
+    )
 
     session.add(subject)
     session.commit()
@@ -25,10 +32,12 @@ def add_subject(name: str):
     return True
 
 
-def get_subjects():
+def get_subjects(user_id: int):
     session = SessionLocal()
 
-    statement = select(Subject)
+    statement = select(Subject).where(
+        Subject.user_id == user_id
+    )
 
     result = session.execute(statement)
 
@@ -37,6 +46,23 @@ def get_subjects():
     session.close()
 
     return subjects
+
+
+def subject_exists(name: str, user_id: int):
+    session = SessionLocal()
+
+    statement = select(Subject).where(
+        Subject.name == name,
+        Subject.user_id == user_id,
+    )
+
+    result = session.execute(statement)
+
+    subject = result.scalar_one_or_none()
+
+    session.close()
+
+    return subject is not None
 
 
 def delete_subject(name: str):
@@ -57,17 +83,3 @@ def delete_subject(name: str):
     session.close()
 
     return True
-
-
-def subject_exists(name: str):
-    session = SessionLocal()
-
-    statement = select(Subject).where(Subject.name == name)
-
-    result = session.execute(statement)
-
-    subject = result.scalar_one_or_none()
-
-    session.close()
-
-    return subject is not None

@@ -17,16 +17,18 @@ router = Router()
 
 @router.message(F.text == "Statistics")
 async def statistics_handler(message: Message):
-    subjects_count = len(get_subjects())
+    user_id = message.from_user.id
 
-    tasks_count = get_tasks_count()
-    completed_count = get_completed_tasks_count()
+    subjects_count = len(get_subjects(user_id))
+
+    tasks_count = get_tasks_count(user_id)
+    completed_count = get_completed_tasks_count(user_id)
 
     remaining_count = tasks_count - completed_count
 
-    with_deadline = get_tasks_with_deadline_count()
-    without_deadline = get_tasks_without_deadline_count()
-    overdue_count = get_overdue_tasks_count()
+    with_deadline = get_tasks_with_deadline_count(user_id)
+    without_deadline = get_tasks_without_deadline_count(user_id)
+    overdue_count = get_overdue_tasks_count(user_id)
 
     completion_rate = 0
 
@@ -46,3 +48,4 @@ async def statistics_handler(message: Message):
     )
 
     await message.answer(text)
+    

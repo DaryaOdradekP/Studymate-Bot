@@ -2,9 +2,9 @@ from src.database.subjects import get_subjects
 from src.database.tasks import get_tasks
 
 
-def get_statistics():
-    subjects = get_subjects()
-    tasks = get_tasks()
+def get_statistics(user_id: int):
+    subjects = get_subjects(user_id)
+    tasks = get_tasks(user_id)
 
     total_subjects = len(subjects)
     total_tasks = len(tasks)

@@ -52,14 +52,14 @@ def add_task(
     return True
 
 
-def get_tasks():
+def get_tasks(user_id: int):
     session = SessionLocal()
 
     statement = (
         select(Task)
         .join(Task.subject)
+        .where(Subject.user_id == user_id)
         .options(selectinload(Task.subject))
-        .order_by(Subject.name, Task.title)
     )
 
     result = session.execute(statement)
@@ -213,10 +213,14 @@ def update_task_deadline(title: str, deadline: date | None):
     return True
 
 
-def get_tasks_count():
+def get_tasks_count(user_id: int):
     session = SessionLocal()
 
-    statement = select(Task)
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(Subject.user_id == user_id)
+    )
 
     result = session.execute(statement)
 
@@ -227,10 +231,17 @@ def get_tasks_count():
     return count
 
 
-def get_completed_tasks_count():
+def get_completed_tasks_count(user_id: int):
     session = SessionLocal()
 
-    statement = select(Task).where(Task.completed == True)
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Subject.user_id == user_id,
+            Task.completed == True,
+        )
+    )
 
     result = session.execute(statement)
 
@@ -241,10 +252,17 @@ def get_completed_tasks_count():
     return count
 
 
-def get_tasks_with_deadline_count():
+def get_tasks_with_deadline_count(user_id: int):
     session = SessionLocal()
 
-    statement = select(Task).where(Task.deadline != None)
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Subject.user_id == user_id,
+            Task.deadline != None,
+        )
+    )
 
     result = session.execute(statement)
 
@@ -255,10 +273,17 @@ def get_tasks_with_deadline_count():
     return count
 
 
-def get_tasks_without_deadline_count():
+def get_tasks_without_deadline_count(user_id: int):
     session = SessionLocal()
 
-    statement = select(Task).where(Task.deadline == None)
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Subject.user_id == user_id,
+            Task.deadline == None,
+        )
+    )
 
     result = session.execute(statement)
 
@@ -269,13 +294,18 @@ def get_tasks_without_deadline_count():
     return count
 
 
-def get_overdue_tasks_count():
+def get_overdue_tasks_count(user_id: int):
     session = SessionLocal()
 
-    statement = select(Task).where(
-        Task.deadline != None,
-        Task.deadline < date.today(),
-        Task.completed == False,
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Subject.user_id == user_id,
+            Task.deadline != None,
+            Task.deadline < date.today(),
+            Task.completed == False,
+        )
     )
 
     result = session.execute(statement)
