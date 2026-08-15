@@ -6,6 +6,7 @@ from src.database.subjects import get_subjects, subject_exists
 from src.database.tasks import (
     add_task,
     get_tasks,
+    get_overdue_tasks,
     delete_task,
     task_exists,
     complete_task,
@@ -477,3 +478,33 @@ async def process_new_deadline(message: Message, state: FSMContext):
         await message.answer(
             text="Task deadline could not be updated."
         )
+
+
+@router.message(F.text == "Overdue Tasks")
+async def overdue_tasks_handler(message: Message):
+    tasks = get_overdue_tasks()
+
+    if not tasks:
+        await message.answer(
+            text="There are no overdue tasks."
+        )
+        return
+
+    text = "Overdue tasks:\n\n"
+
+    current_subject = None
+
+    for task in tasks:
+        if task.subject.name != current_subject:
+            current_subject = task.subject.name
+            text += f"\n{current_subject}\n"
+
+        text += f"• {task.title}\n"
+        text += f"  Deadline: {task.deadline.strftime('%Y-%m-%d')}\n"
+
+        if task.description:
+            text += f"  {task.description}\n"
+
+        text += "\n"
+
+    await message.answer(text)

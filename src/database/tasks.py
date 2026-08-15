@@ -285,3 +285,21 @@ def get_overdue_tasks_count():
     session.close()
 
     return count
+
+
+def get_overdue_tasks():
+    session = SessionLocal()
+
+    statement = select(Task).where(
+        Task.deadline != None,
+        Task.deadline < date.today(),
+        Task.completed == False,
+    ).options(selectinload(Task.subject))
+
+    result = session.execute(statement)
+
+    tasks = result.scalars().all()
+
+    session.close()
+
+    return tasks
