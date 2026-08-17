@@ -64,6 +64,7 @@ def get_tasks(user_id: int):
         .join(Task.subject)
         .where(Subject.user_id == user_id)
         .options(selectinload(Task.subject))
+        .order_by(Subject.id, Task.id)
     )
 
     result = session.execute(statement)
@@ -101,21 +102,17 @@ def delete_task(title: str, user_id: int):
     return True
 
 
-def task_exists(subject_name: str, title: str):
+def task_exists(subject_name: str, title: str, user_id: int):
     session = SessionLocal()
 
-    statement = select(Subject).where(Subject.name == subject_name)
-    result = session.execute(statement)
-
-    subject = result.scalar_one_or_none()
-
-    if subject is None:
-        session.close()
-        return False
-
-    statement = select(Task).where(
-        Task.subject_id == subject.id,
-        Task.title == title
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Task.title == title,
+            Subject.name == subject_name,
+            Subject.user_id == user_id,
+        )
     )
 
     result = session.execute(statement)
@@ -127,10 +124,17 @@ def task_exists(subject_name: str, title: str):
     return existing_task is not None
 
 
-def complete_task(title: str):
+def complete_task(title: str, user_id: int):
     session = SessionLocal()
 
-    statement = select(Task).where(Task.title == title)
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Task.title == title,
+            Subject.user_id == user_id,
+        )
+    )
 
     result = session.execute(statement)
 
@@ -151,10 +155,21 @@ def complete_task(title: str):
     return True
 
 
-def update_task_title(old_title: str, new_title: str):
+def update_task_title(
+    old_title: str,
+    new_title: str,
+    user_id: int,
+):
     session = SessionLocal()
 
-    statement = select(Task).where(Task.title == old_title)
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Task.title == old_title,
+            Subject.user_id == user_id,
+        )
+    )
     result = session.execute(statement)
 
     task = result.scalar_one_or_none()
@@ -184,10 +199,21 @@ def update_task_title(old_title: str, new_title: str):
     return True
 
 
-def update_task_description(title: str, description: str | None):
+def update_task_description(
+    title: str,
+    description: str | None,
+    user_id: int,
+):
     session = SessionLocal()
 
-    statement = select(Task).where(Task.title == title)
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Task.title == title,
+            Subject.user_id == user_id,
+        )
+    )
     result = session.execute(statement)
 
     task = result.scalar_one_or_none()
@@ -204,10 +230,21 @@ def update_task_description(title: str, description: str | None):
     return True
 
 
-def update_task_deadline(title: str, deadline: date | None):
+def update_task_deadline(
+    title: str,
+    deadline: date | None,
+    user_id: int,
+):
     session = SessionLocal()
 
-    statement = select(Task).where(Task.title == title)
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Task.title == title,
+            Subject.user_id == user_id,
+        )
+    )
     result = session.execute(statement)
 
     task = result.scalar_one_or_none()

@@ -23,7 +23,9 @@ router = Router()
 
 
 @router.message(F.text == "Tasks")
-async def tasks_handler(message: Message):
+async def tasks_handler(message: Message, state: FSMContext):
+    await state.clear()
+
     await message.answer(
         text="Task menu",
         reply_markup=tasks_menu,
@@ -31,7 +33,9 @@ async def tasks_handler(message: Message):
 
 
 @router.message(F.text == "Back")
-async def back_handler(message: Message):
+async def back_handler(message: Message, state: FSMContext):
+    await state.clear()
+
     await message.answer(
         text="Main menu",
         reply_markup=main_menu,
@@ -39,7 +43,9 @@ async def back_handler(message: Message):
 
 
 @router.message(F.text == "Show Tasks")
-async def show_tasks_handler(message: Message):
+async def show_tasks_handler(message: Message, state: FSMContext):
+    await state.clear()
+
     user_id = message.from_user.id
     tasks = get_tasks(user_id)
 
@@ -50,7 +56,6 @@ async def show_tasks_handler(message: Message):
         return
 
     text = "Your tasks:\n\n"
-
     current_subject = None
 
     for task in tasks:
@@ -75,6 +80,8 @@ async def show_tasks_handler(message: Message):
 
 @router.message(F.text == "Add Task")
 async def add_task_handler(message: Message, state: FSMContext):
+    await state.clear()
+
     user_id = message.from_user.id
     subjects = get_subjects(user_id)
 
@@ -99,7 +106,6 @@ async def add_task_handler(message: Message, state: FSMContext):
 @router.message(TaskState.waiting_for_subject)
 async def process_subject_name(message: Message, state: FSMContext):
     subject_name = message.text.strip()
-
     user_id = message.from_user.id
 
     if not subject_exists(subject_name, user_id):
@@ -134,8 +140,9 @@ async def process_task_title(message: Message, state: FSMContext):
         return
 
     data = await state.get_data()
+    user_id = message.from_user.id
 
-    if task_exists(data["subject_name"], title):
+    if task_exists(data["subject_name"], title, user_id):
         await message.answer(
             text="Task with this title already exists in this subject."
         )
@@ -168,6 +175,8 @@ async def process_task_description(message: Message, state: FSMContext):
 
 @router.message(F.text == "Delete Task")
 async def delete_task_handler(message: Message, state: FSMContext):
+    await state.clear()
+
     user_id = message.from_user.id
     tasks = get_tasks(user_id)
 
@@ -180,7 +189,6 @@ async def delete_task_handler(message: Message, state: FSMContext):
     await state.set_state(TaskState.waiting_for_delete_title)
 
     text = "Your tasks:\n\n"
-
     current_subject = None
 
     for task in tasks:
@@ -197,6 +205,8 @@ async def delete_task_handler(message: Message, state: FSMContext):
 
 @router.message(F.text == "Complete Task")
 async def complete_task_handler(message: Message, state: FSMContext):
+    await state.clear()
+
     user_id = message.from_user.id
     tasks = get_tasks(user_id)
 
@@ -217,7 +227,6 @@ async def complete_task_handler(message: Message, state: FSMContext):
     await state.set_state(TaskState.waiting_for_complete_title)
 
     text = "Your tasks:\n\n"
-
     current_subject = None
 
     for task in incomplete_tasks:
@@ -234,9 +243,10 @@ async def complete_task_handler(message: Message, state: FSMContext):
 
 @router.message(TaskState.waiting_for_complete_title)
 async def process_complete_task(message: Message, state: FSMContext):
-    task_title = message.text
+    task_title = message.text.strip()
+    user_id = message.from_user.id
 
-    success = complete_task(task_title)
+    success = complete_task(task_title, user_id)
 
     await state.clear()
 
@@ -248,7 +258,7 @@ async def process_complete_task(message: Message, state: FSMContext):
         await message.answer(
             text=f"Task '{task_title}' not found."
         )
-        
+
 
 @router.message(TaskState.waiting_for_delete_title)
 async def process_delete_task(message: Message, state: FSMContext):
@@ -265,19 +275,22 @@ async def process_delete_task(message: Message, state: FSMContext):
         )
     else:
         await message.answer(
-            text="Task not found or has already been completed."
+            text="Task not found."
         )
 
 
 @router.message(TaskState.waiting_for_deadline)
 async def process_task_deadline(message: Message, state: FSMContext):
-    deadline = message.text
+    deadline = message.text.strip()
 
     if deadline == "-":
         deadline = None
     else:
         try:
-            deadline = datetime.strptime(deadline, "%Y-%m-%d").date()
+            deadline = datetime.strptime(
+                deadline,
+                "%Y-%m-%d"
+            ).date()
         except ValueError:
             await message.answer(
                 text="Invalid date. Use YYYY-MM-DD or '-' to skip."
@@ -315,6 +328,8 @@ async def process_task_deadline(message: Message, state: FSMContext):
 
 @router.message(F.text == "Edit Task")
 async def edit_task_handler(message: Message, state: FSMContext):
+    await state.clear()
+
     user_id = message.from_user.id
     tasks = get_tasks(user_id)
 
@@ -327,7 +342,6 @@ async def edit_task_handler(message: Message, state: FSMContext):
     await state.set_state(TaskState.waiting_for_edit_title)
 
     text = "Your tasks:\n\n"
-
     current_subject = None
 
     for task in tasks:
@@ -408,10 +422,12 @@ async def process_new_title(message: Message, state: FSMContext):
         return
 
     data = await state.get_data()
+    user_id = message.from_user.id
 
     success = update_task_title(
         data["title"],
         new_title,
+        user_id,
     )
 
     await state.clear()
@@ -425,6 +441,7 @@ async def process_new_title(message: Message, state: FSMContext):
             text="Task title could not be updated."
         )
 
+
 @router.message(TaskState.waiting_for_new_description)
 async def process_new_description(message: Message, state: FSMContext):
     description = message.text.strip()
@@ -433,10 +450,12 @@ async def process_new_description(message: Message, state: FSMContext):
         description = None
 
     data = await state.get_data()
+    user_id = message.from_user.id
 
     success = update_task_description(
         data["title"],
         description,
+        user_id,
     )
 
     await state.clear()
@@ -459,7 +478,10 @@ async def process_new_deadline(message: Message, state: FSMContext):
         deadline = None
     else:
         try:
-            deadline = datetime.strptime(deadline, "%Y-%m-%d").date()
+            deadline = datetime.strptime(
+                deadline,
+                "%Y-%m-%d"
+            ).date()
         except ValueError:
             await message.answer(
                 text="Invalid date. Use YYYY-MM-DD or '-' to skip."
@@ -473,10 +495,12 @@ async def process_new_deadline(message: Message, state: FSMContext):
             return
 
     data = await state.get_data()
+    user_id = message.from_user.id
 
     success = update_task_deadline(
         data["title"],
         deadline,
+        user_id,
     )
 
     await state.clear()
@@ -492,7 +516,9 @@ async def process_new_deadline(message: Message, state: FSMContext):
 
 
 @router.message(F.text == "Overdue Tasks")
-async def overdue_tasks_handler(message: Message):
+async def overdue_tasks_handler(message: Message, state: FSMContext):
+    await state.clear()
+
     user_id = message.from_user.id
     tasks = get_overdue_tasks(user_id)
 
@@ -503,7 +529,6 @@ async def overdue_tasks_handler(message: Message):
         return
 
     text = "Overdue tasks:\n\n"
-
     current_subject = None
 
     for task in tasks:
@@ -520,3 +545,4 @@ async def overdue_tasks_handler(message: Message):
         text += "\n"
 
     await message.answer(text)
+    
