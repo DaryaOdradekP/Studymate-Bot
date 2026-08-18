@@ -119,7 +119,8 @@ def test_add_task_returns_true_for_new_task(session):
     result = tasks.add_task(
         "Math",
         "Homework",
-        "Chapter 5",
+        None,
+        "Medium",
         None,
         1,
     )
@@ -129,7 +130,7 @@ def test_add_task_returns_true_for_new_task(session):
     task = session.query(Task).one()
 
     assert task.title == "Homework"
-    assert task.description == "Chapter 5"
+    assert task.description is None
     assert task.subject_id == subject.id
     assert task.completed is False
 
@@ -139,6 +140,7 @@ def test_add_task_returns_false_for_missing_subject(session):
         "Math",
         "Homework",
         None,
+        "Medium",
         None,
         1,
     )
@@ -160,6 +162,7 @@ def test_add_task_returns_false_for_duplicate_task(session):
         "Math",
         "Homework",
         None,
+        "Medium",
         None,
         1,
     )
@@ -168,6 +171,7 @@ def test_add_task_returns_false_for_duplicate_task(session):
         "Math",
         "Homework",
         None,
+        "Medium",
         None,
         1,
     )
@@ -667,6 +671,7 @@ def test_add_task_allows_same_title_in_different_subjects(session):
         "Math",
         "Homework",
         None,
+        "Medium",
         None,
         1,
     )
@@ -675,6 +680,7 @@ def test_add_task_allows_same_title_in_different_subjects(session):
         "History",
         "Homework",
         None,
+        "Medium",
         None,
         1,
     )
@@ -697,6 +703,7 @@ def test_add_task_returns_false_for_another_user_subject(session):
         "Math",
         "Homework",
         None,
+        "Medium",
         None,
         2,
     )
@@ -720,6 +727,7 @@ def test_add_task_saves_deadline(session):
         "Math",
         "Homework",
         None,
+        "Medium",
         deadline,
         1,
     )
@@ -1320,3 +1328,131 @@ def test_get_tasks_without_deadline_ignores_other_users(session):
 
     assert len(result) == 1
     assert result[0].title == "My task"
+
+
+def test_add_task_with_priority(session):
+    subject = Subject(
+        name="Math",
+        user_id=1,
+    )
+
+    session.add(subject)
+    session.commit()
+
+    result = tasks.add_task(
+        "Math",
+        "Homework",
+        "Chapter 3",
+        "High",
+        None,
+        1,
+    )
+
+    assert result is True
+
+    task = session.query(Task).one()
+
+    assert task.title == "Homework"
+    assert task.priority == "High"
+
+
+def test_task_priority_defaults_to_medium(session):
+    subject = Subject(
+        name="Math",
+        user_id=1,
+    )
+
+    session.add(subject)
+    session.commit()
+
+    task = Task(
+        title="Homework",
+        subject_id=subject.id,
+    )
+
+    session.add(task)
+    session.commit()
+
+    result = session.query(Task).one()
+
+    assert result.priority == "Medium"
+
+
+def test_update_task_priority(session):
+    subject = Subject(
+        name="Math",
+        user_id=1,
+    )
+
+    session.add(subject)
+    session.commit()
+
+    task = Task(
+        title="Homework",
+        subject_id=subject.id,
+        priority="Medium",
+    )
+
+    session.add(task)
+    session.commit()
+
+    result = tasks.update_task_priority(
+        "Homework",
+        "High",
+        1,
+    )
+
+    assert result is True
+
+    updated_task = session.query(Task).one()
+
+    assert updated_task.priority == "High"
+
+
+def test_update_task_priority_returns_false_for_missing_task(session):
+    result = tasks.update_task_priority(
+        "Missing",
+        "High",
+        1,
+    )
+
+    assert result is False
+
+
+def test_update_task_priority_ignores_other_users(session):
+    subject_one = Subject(
+        name="Math",
+        user_id=1,
+    )
+
+    subject_two = Subject(
+        name="Physics",
+        user_id=2,
+    )
+
+    session.add_all([
+        subject_one,
+        subject_two,
+    ])
+    session.commit()
+
+    session.add(
+        Task(
+            title="Homework",
+            subject_id=subject_two.id,
+            priority="Medium",
+        )
+    )
+    session.commit()
+
+    result = tasks.update_task_priority(
+        "Homework",
+        "High",
+        1,
+    )
+
+    assert result is False
+
+    task = session.query(Task).one()
+
+    assert task.priority == "Medium"        

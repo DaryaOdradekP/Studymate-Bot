@@ -7,10 +7,12 @@ from sqlalchemy.orm import selectinload
 
 from datetime import date
 
+
 def add_task(
     subject_name: str,
     title: str,
     description: str | None,
+    priority: str,
     deadline: date | None,
     user_id: int,
 ):
@@ -45,6 +47,7 @@ def add_task(
     task = Task(
         title=title,
         description=description,
+        priority=priority,
         deadline=deadline,
         subject_id=subject.id,
     )
@@ -451,3 +454,35 @@ def get_tasks_without_deadline(user_id: int):
     session.close()
 
     return tasks
+
+
+def update_task_priority(
+    title: str,
+    priority: str,
+    user_id: int,
+):
+    session = SessionLocal()
+
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Task.title == title,
+            Subject.user_id == user_id,
+        )
+    )
+
+    result = session.execute(statement)
+
+    task = result.scalar_one_or_none()
+
+    if task is None:
+        session.close()
+        return False
+
+    task.priority = priority
+
+    session.commit()
+    session.close()
+
+    return True

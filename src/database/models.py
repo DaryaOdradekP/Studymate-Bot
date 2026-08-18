@@ -1,11 +1,10 @@
-from sqlalchemy import String
+from datetime import date
+
+from sqlalchemy import Date, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.db import Base
-from sqlalchemy import ForeignKey
 
-from datetime import date
-from sqlalchemy import Date
 
 class Subject(Base):
     __tablename__ = "subjects"
@@ -16,25 +15,47 @@ class Subject(Base):
 
     tasks: Mapped[list["Task"]] = relationship(back_populates="subject")
 
+
 class Task(Base):
     __tablename__ = "tasks"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(String(1000), nullable=True)
+
     subject_id: Mapped[int] = mapped_column(
         ForeignKey("subjects.id"),
-        nullable=False
+        nullable=False,
     )
+
     subject: Mapped["Subject"] = relationship(back_populates="tasks")
-    deadline: Mapped[date | None] = mapped_column(Date, nullable=True)
-    completed: Mapped[bool] = mapped_column(default=False)
+
+    deadline: Mapped[date | None] = mapped_column(
+        Date,
+        nullable=True,
+    )
+
+    completed: Mapped[bool] = mapped_column(
+        default=False,
+    )
+
+    priority: Mapped[str] = mapped_column(
+        String(10),
+        default="Medium",
+        nullable=False,
+    )
 
 
 class UserSettings(Base):
     __tablename__ = "user_settings"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(unique=True, nullable=False)
+
+    user_id: Mapped[int] = mapped_column(
+        unique=True,
+        nullable=False,
+    )
+
     notifications_enabled: Mapped[bool] = mapped_column(
         default=True,
         nullable=False,

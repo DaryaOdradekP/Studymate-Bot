@@ -15,6 +15,7 @@ from src.database.tasks import (
     update_task_description,
     update_task_deadline,
     get_tasks_without_deadline,
+    update_task_priority,
 )
 from src.keyboards.main_menu import main_menu
 from src.keyboards.tasks_menu import tasks_menu
@@ -68,6 +69,7 @@ async def show_tasks_handler(message: Message, state: FSMContext):
         status = "✓" if task.completed else "•"
 
         text += f"{status} {task.title}\n"
+        text += f"   Priority: {task.priority}\n"
 
         if task.description:
             text += f"   Description: {task.description}\n"
@@ -160,7 +162,10 @@ async def process_task_title(message: Message, state: FSMContext):
 
 
 @router.message(TaskState.waiting_for_description)
-async def process_task_description(message: Message, state: FSMContext):
+async def process_task_description(
+    message: Message,
+    state: FSMContext,
+):
     description = message.text
 
     if description == "-":
@@ -168,10 +173,15 @@ async def process_task_description(message: Message, state: FSMContext):
 
     await state.update_data(description=description)
 
-    await state.set_state(TaskState.waiting_for_deadline)
+    await state.set_state(TaskState.waiting_for_priority)
 
     await message.answer(
-        text="Enter deadline (YYYY-MM-DD)\n(or send '-' to skip):"
+        text=(
+            "Choose priority:\n\n"
+            "1 - Low\n"
+            "2 - Medium\n"
+            "3 - High"
+        )
     )
 
 
@@ -312,6 +322,7 @@ async def process_task_deadline(message: Message, state: FSMContext):
         data["subject_name"],
         data["title"],
         data["description"],
+        data["priority"],
         deadline,
         user_id,
     )
@@ -391,25 +402,47 @@ async def process_edit_field(message: Message, state: FSMContext):
 
     if choice == "1":
         await state.set_state(TaskState.waiting_for_new_title)
+
         await message.answer(
             text="Enter new task title:"
         )
 
     elif choice == "2":
         await state.set_state(TaskState.waiting_for_new_description)
+
         await message.answer(
             text="Enter new description\n(or send '-' to remove it):"
         )
 
     elif choice == "3":
-        await state.set_state(TaskState.waiting_for_new_deadline)
+        await state.set_state(
+            TaskState.waiting_for_new_priority
+        )
+
         await message.answer(
-            text="Enter new deadline (YYYY-MM-DD)\n(or send '-' to remove it):"
+            text=(
+                "Choose new priority:\n\n"
+                "1 - Low\n"
+                "2 - Medium\n"
+                "3 - High"
+            )
+        )
+
+    elif choice == "4":
+        await state.set_state(
+            TaskState.waiting_for_new_deadline
+        )
+
+        await message.answer(
+            text=(
+                "Enter new deadline (YYYY-MM-DD)\n"
+                "(or send '-' to remove it):"
+            )
         )
 
     else:
         await message.answer(
-            text="Choose 1, 2 or 3."
+            text="Choose 1, 2, 3 or 4."
         )
 
 
@@ -539,6 +572,7 @@ async def overdue_tasks_handler(message: Message, state: FSMContext):
             text += f"\n{current_subject}\n"
 
         text += f"• {task.title}\n"
+        text += f"  Priority: {task.priority}\n"
         text += f"  Deadline: {task.deadline.strftime('%Y-%m-%d')}\n"
 
         if task.description:
@@ -567,6 +601,7 @@ async def upcoming_tasks_handler(message: Message, state: FSMContext):
     for task in tasks:
         text += f"• {task.title}\n"
         text += f"  Subject: {task.subject.name}\n"
+        text += f"  Priority: {task.priority}\n"
         text += f"  Deadline: {task.deadline.strftime('%Y-%m-%d')}\n"
 
         if task.description:
@@ -602,6 +637,7 @@ async def no_deadline_tasks_handler(
             text += f"\n{current_subject}\n"
 
         text += f"• {task.title}\n"
+        text += f"  Priority: {task.priority}\n"    
 
         if task.description:
             text += f"  {task.description}\n"
@@ -609,4 +645,76 @@ async def no_deadline_tasks_handler(
         text += "\n"
 
     await message.answer(text)
-    
+
+
+@router.message(TaskState.waiting_for_priority)
+async def process_task_priority(
+    message: Message,
+    state: FSMContext,
+):
+    choice = message.text.strip()
+
+    priorities = {
+        "1": "Low",
+        "2": "Medium",
+        "3": "High",
+    }
+
+    if choice not in priorities:
+        await message.answer(
+            text="Choose 1, 2 or 3."
+        )
+        return
+
+    await state.update_data(
+        priority=priorities[choice]
+    )
+
+    await state.set_state(TaskState.waiting_for_deadline)
+
+    await message.answer(
+        text=(
+            "Enter deadline (YYYY-MM-DD)\n"
+            "(or send '-' to skip):"
+        )
+    )
+
+
+@router.message(TaskState.waiting_for_new_priority)
+async def process_new_priority(
+    message: Message,
+    state: FSMContext,
+):
+    choice = message.text.strip()
+
+    priorities = {
+        "1": "Low",
+        "2": "Medium",
+        "3": "High",
+    }
+
+    if choice not in priorities:
+        await message.answer(
+            text="Choose 1, 2 or 3."
+        )
+        return
+
+    data = await state.get_data()
+    user_id = message.from_user.id
+
+    success = update_task_priority(
+        data["title"],
+        priorities[choice],
+        user_id,
+    )
+
+    await state.clear()
+
+    if success:
+        await message.answer(
+            text="Task priority updated."
+        )
+    else:
+        await message.answer(
+            text="Task priority could not be updated."
+        )
