@@ -1167,3 +1167,84 @@ def test_get_overdue_tasks_count_isolated_by_user(session):
 
     assert tasks.get_overdue_tasks_count(1) == 1
     assert tasks.get_overdue_tasks_count(2) == 1
+
+
+def test_get_upcoming_tasks_returns_only_incomplete_tasks_within_next_7_days(
+    session,
+):
+    from datetime import date, timedelta
+
+    subject = Subject(
+        name="Math",
+        user_id=1,
+    )
+
+    session.add(subject)
+    session.commit()
+
+    session.add_all([
+        Task(
+            title="Tomorrow",
+            subject_id=subject.id,
+            deadline=date.today() + timedelta(days=1),
+        ),
+        Task(
+            title="Next week",
+            subject_id=subject.id,
+            deadline=date.today() + timedelta(days=7),
+        ),
+        Task(
+            title="Too far",
+            subject_id=subject.id,
+            deadline=date.today() + timedelta(days=8),
+        ),
+        Task(
+            title="Completed",
+            subject_id=subject.id,
+            deadline=date.today() + timedelta(days=2),
+            completed=True,
+        ),
+    ])
+    session.commit()
+
+    result = tasks.get_upcoming_tasks(1)
+
+    titles = [task.title for task in result]
+
+    assert titles == ["Tomorrow", "Next week"]
+
+
+def test_get_upcoming_tasks_ignores_other_users(session):
+    subject_one = Subject(
+        name="Math",
+        user_id=1,
+    )
+
+    subject_two = Subject(
+        name="Physics",
+        user_id=2,
+    )
+
+    session.add_all([subject_one, subject_two])
+    session.commit()
+
+    from datetime import date, timedelta
+
+    session.add_all([
+        Task(
+            title="My task",
+            subject_id=subject_one.id,
+            deadline=date.today() + timedelta(days=1),
+        ),
+        Task(
+            title="Other task",
+            subject_id=subject_two.id,
+            deadline=date.today() + timedelta(days=1),
+        ),
+    ])
+    session.commit()
+
+    result = tasks.get_upcoming_tasks(1)
+
+    assert len(result) == 1
+    assert result[0].title == "My task"

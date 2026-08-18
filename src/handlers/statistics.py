@@ -22,8 +22,14 @@ async def statistics_handler(message: Message):
         f"Tasks with deadlines: {statistics['tasks_with_deadline']}\n"
         f"Tasks without deadlines: {statistics['tasks_without_deadline']}\n"
         f"Overdue tasks: {statistics['overdue_tasks']}\n\n"
-        f"Completion rate: {statistics['completion_rate']}%"
+        f"Completion rate: {statistics['completion_rate']}%\n"
     )
+
+    if statistics["tasks_by_subject"]:
+        text += "\nTasks by subject:\n"
+
+        for subject, count in statistics["tasks_by_subject"].items():
+            text += f"• {subject}: {count}\n"
 
     await message.answer(text)
     

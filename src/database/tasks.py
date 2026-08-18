@@ -397,3 +397,33 @@ def get_overdue_tasks(user_id: int):
     session.close()
 
     return tasks
+
+
+def get_upcoming_tasks(user_id: int):
+    session = SessionLocal()
+
+    today = date.today()
+
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Subject.user_id == user_id,
+            Task.deadline != None,
+            Task.deadline >= today,
+            Task.deadline <= date.fromordinal(
+                today.toordinal() + 7
+            ),
+            Task.completed == False,
+        )
+        .options(selectinload(Task.subject))
+        .order_by(Task.deadline)
+    )
+
+    result = session.execute(statement)
+
+    tasks = result.scalars().all()
+
+    session.close()
+
+    return tasks

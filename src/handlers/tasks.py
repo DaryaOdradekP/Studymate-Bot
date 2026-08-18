@@ -7,6 +7,7 @@ from src.database.tasks import (
     add_task,
     get_tasks,
     get_overdue_tasks,
+    get_upcoming_tasks,
     delete_task,
     task_exists,
     complete_task,
@@ -537,6 +538,34 @@ async def overdue_tasks_handler(message: Message, state: FSMContext):
             text += f"\n{current_subject}\n"
 
         text += f"• {task.title}\n"
+        text += f"  Deadline: {task.deadline.strftime('%Y-%m-%d')}\n"
+
+        if task.description:
+            text += f"  {task.description}\n"
+
+        text += "\n"
+
+    await message.answer(text)
+
+
+@router.message(F.text == "Upcoming Tasks")
+async def upcoming_tasks_handler(message: Message, state: FSMContext):
+    await state.clear()
+
+    user_id = message.from_user.id
+    tasks = get_upcoming_tasks(user_id)
+
+    if not tasks:
+        await message.answer(
+            text="There are no upcoming tasks in the next 7 days."
+        )
+        return
+
+    text = "Upcoming tasks:\n\n"
+
+    for task in tasks:
+        text += f"• {task.title}\n"
+        text += f"  Subject: {task.subject.name}\n"
         text += f"  Deadline: {task.deadline.strftime('%Y-%m-%d')}\n"
 
         if task.description:
