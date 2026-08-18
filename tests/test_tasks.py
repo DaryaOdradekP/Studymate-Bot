@@ -1248,3 +1248,75 @@ def test_get_upcoming_tasks_ignores_other_users(session):
 
     assert len(result) == 1
     assert result[0].title == "My task"
+
+
+def test_get_tasks_without_deadline_returns_only_incomplete_tasks(session):
+    from datetime import date, timedelta
+
+    subject = Subject(
+        name="Math",
+        user_id=1,
+    )
+
+    session.add(subject)
+    session.commit()
+
+    session.add_all([
+        Task(
+            title="No deadline",
+            subject_id=subject.id,
+            deadline=None,
+        ),
+        Task(
+            title="With deadline",
+            subject_id=subject.id,
+            deadline=date.today() + timedelta(days=3),
+        ),
+        Task(
+            title="Completed no deadline",
+            subject_id=subject.id,
+            deadline=None,
+            completed=True,
+        ),
+    ])
+    session.commit()
+
+    result = tasks.get_tasks_without_deadline(1)
+
+    titles = [task.title for task in result]
+
+    assert titles == ["No deadline"]
+
+
+def test_get_tasks_without_deadline_ignores_other_users(session):
+    subject_one = Subject(
+        name="Math",
+        user_id=1,
+    )
+
+    subject_two = Subject(
+        name="Physics",
+        user_id=2,
+    )
+
+    session.add_all([subject_one, subject_two])
+    session.commit()
+
+    session.add_all([
+        Task(
+            title="My task",
+            subject_id=subject_one.id,
+            deadline=None,
+        ),
+        Task(
+            title="Other task",
+            subject_id=subject_two.id,
+            deadline=None,
+        ),
+    ])
+    session.commit()
+
+    result = tasks.get_tasks_without_deadline(1)
+
+    assert len(result) == 1
+    assert result[0].title == "My task"

@@ -427,3 +427,27 @@ def get_upcoming_tasks(user_id: int):
     session.close()
 
     return tasks
+
+
+def get_tasks_without_deadline(user_id: int):
+    session = SessionLocal()
+
+    statement = (
+        select(Task)
+        .join(Task.subject)
+        .where(
+            Subject.user_id == user_id,
+            Task.deadline == None,
+            Task.completed == False,
+        )
+        .options(selectinload(Task.subject))
+        .order_by(Subject.id, Task.id)
+    )
+
+    result = session.execute(statement)
+
+    tasks = result.scalars().all()
+
+    session.close()
+
+    return tasks

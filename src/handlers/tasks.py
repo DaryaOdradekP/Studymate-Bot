@@ -14,6 +14,7 @@ from src.database.tasks import (
     update_task_title,
     update_task_description,
     update_task_deadline,
+    get_tasks_without_deadline,
 )
 from src.keyboards.main_menu import main_menu
 from src.keyboards.tasks_menu import tasks_menu
@@ -567,6 +568,40 @@ async def upcoming_tasks_handler(message: Message, state: FSMContext):
         text += f"• {task.title}\n"
         text += f"  Subject: {task.subject.name}\n"
         text += f"  Deadline: {task.deadline.strftime('%Y-%m-%d')}\n"
+
+        if task.description:
+            text += f"  {task.description}\n"
+
+        text += "\n"
+
+    await message.answer(text)
+
+
+@router.message(F.text == "No Deadline Tasks")
+async def no_deadline_tasks_handler(
+    message: Message,
+    state: FSMContext,
+):
+    await state.clear()
+
+    user_id = message.from_user.id
+    tasks = get_tasks_without_deadline(user_id)
+
+    if not tasks:
+        await message.answer(
+            text="There are no tasks without a deadline."
+        )
+        return
+
+    text = "Tasks without deadline:\n\n"
+    current_subject = None
+
+    for task in tasks:
+        if task.subject.name != current_subject:
+            current_subject = task.subject.name
+            text += f"\n{current_subject}\n"
+
+        text += f"• {task.title}\n"
 
         if task.description:
             text += f"  {task.description}\n"
