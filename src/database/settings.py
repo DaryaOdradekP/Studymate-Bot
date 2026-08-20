@@ -5,46 +5,39 @@ from src.database.models import UserSettings
 
 
 def get_settings(user_id: int):
-    session = SessionLocal()
+    with SessionLocal() as session:
+        statement = select(UserSettings).where(
+            UserSettings.user_id == user_id
+        )
 
-    statement = select(UserSettings).where(
-        UserSettings.user_id == user_id
-    )
+        result = session.execute(statement)
+        settings = result.scalar_one_or_none()
 
-    result = session.execute(statement)
+        if settings is None:
+            settings = UserSettings(user_id=user_id)
+            session.add(settings)
+            session.commit()
+            session.refresh(settings)
 
-    settings = result.scalar_one_or_none()
-
-    if settings is None:
-        settings = UserSettings(user_id=user_id)
-        session.add(settings)
-        session.commit()
-        session.refresh(settings)
-
-    session.close()
-
-    return settings
+        return settings
 
 
 def set_notifications(user_id: int, enabled: bool):
-    session = SessionLocal()
-
-    statement = select(UserSettings).where(
-        UserSettings.user_id == user_id
-    )
-
-    result = session.execute(statement)
-
-    settings = result.scalar_one_or_none()
-
-    if settings is None:
-        settings = UserSettings(
-            user_id=user_id,
-            notifications_enabled=enabled,
+    with SessionLocal() as session:
+        statement = select(UserSettings).where(
+            UserSettings.user_id == user_id
         )
-        session.add(settings)
-    else:
-        settings.notifications_enabled = enabled
 
-    session.commit()
-    session.close()
+        result = session.execute(statement)
+        settings = result.scalar_one_or_none()
+
+        if settings is None:
+            settings = UserSettings(
+                user_id=user_id,
+                notifications_enabled=enabled,
+            )
+            session.add(settings)
+        else:
+            settings.notifications_enabled = enabled
+
+        session.commit()
