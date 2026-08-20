@@ -6,6 +6,35 @@ Studymate-Bot is a Python-based productivity bot designed to help students keep 
 
 ## Features
 
+- Create and manage subjects
+- Create tasks
+- Add descriptions
+- Set priorities
+- Set deadlines
+- Complete tasks
+- Edit tasks
+- View overdue and upcoming tasks
+- View statistics
+- Manage notification settings
+
+## Screenshots
+
+### Main Menu
+
+![Main Menu](docs/screenshots/main_menu.png)
+
+### Subjects
+
+![Subjects](docs/screenshots/subject_menu.png)
+
+### Tasks
+
+![Tasks](docs/screenshots/task_menu.png)
+
+### Statistics
+
+![Statistics](docs/screenshots/statistics_menu.png)
+
 ### Subjects
 - Create subjects
 - View existing subjects
