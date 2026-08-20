@@ -27,12 +27,13 @@ def session():
     subjects.SessionLocal = TestingSessionLocal
     tasks.SessionLocal = TestingSessionLocal
 
-    yield test_session
+    try:
+        yield test_session
+    finally:
+        test_session.close()
 
-    test_session.close()
-
-    subjects.SessionLocal = original_subjects_session_local
-    tasks.SessionLocal = original_tasks_session_local
+        subjects.SessionLocal = original_subjects_session_local
+        tasks.SessionLocal = original_tasks_session_local
 
 
 def test_get_statistics_returns_total_subjects_and_tasks(session):

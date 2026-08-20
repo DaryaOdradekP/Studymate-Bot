@@ -24,10 +24,11 @@ def session():
     original_session_local = tasks.SessionLocal
     tasks.SessionLocal = TestingSessionLocal
 
-    yield test_session
-
-    test_session.close()
-    tasks.SessionLocal = original_session_local
+    try:
+        yield test_session
+    finally:
+        test_session.close()
+        tasks.SessionLocal = original_session_local
 
 
 def test_task_exists_returns_true_for_existing_task(session):
@@ -1455,4 +1456,66 @@ def test_update_task_priority_ignores_other_users(session):
 
     task = session.query(Task).one()
 
-    assert task.priority == "Medium"        
+    assert task.priority == "Medium"       
+
+
+def test_update_task_description_returns_false_for_another_user(session):
+    subject = Subject(
+        name="Math",
+        user_id=1,
+    )
+
+    session.add(subject)
+    session.commit()
+
+    task = Task(
+        title="Homework",
+        description="Old description",
+        subject_id=subject.id,
+    )
+
+    session.add(task)
+    session.commit()
+
+    result = tasks.update_task_description(
+        "Homework",
+        "New description",
+        2,
+    )
+
+    assert result is False
+
+    session.refresh(task)
+
+    assert task.description == "Old description"
+
+
+def test_update_task_deadline_returns_false_for_another_user(session):
+    subject = Subject(
+        name="Math",
+        user_id=1,
+    )
+
+    session.add(subject)
+    session.commit()
+
+    task = Task(
+        title="Homework",
+        deadline=date(2026, 9, 1),
+        subject_id=subject.id,
+    )
+
+    session.add(task)
+    session.commit()
+
+    result = tasks.update_task_deadline(
+        "Homework",
+        date(2026, 10, 1),
+        2,
+    )
+
+    assert result is False
+
+    session.refresh(task)
+
+    assert task.deadline == date(2026, 9, 1)
